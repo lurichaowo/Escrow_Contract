@@ -51,7 +51,7 @@ contract HousingContract is Mortal {
     uint256 maxTenantCount; // maximum number of tenants allowed
     uint256 securityDepositFee; // initial one-time refundable security deposit fee
     uint256 rentCost; // montly rent cost
-    uint256 counter; // counter used to assign tenant ids
+    uint256 counter = 0; // counter used to assign tenant ids
 
     /** 
     * @dev Create a new housing contract to collect rent from tenants
@@ -110,11 +110,12 @@ contract HousingContract is Mortal {
     * @param leaseL tenant's lease term in months
     * newID Generates new Tenant to be added to array of tenants
     */
-    function addTenant(address newTenant, uint256 leaseL) public onlyOwner {
+    function addTenant(address payable newTenant, uint256 leaseL) public onlyOwner {
         /** Check if can house anymore tenants, revert() state of EVM otherwise */
         require(tenants.length < maxTenantCount);
 
-        uint256 newID = generateNewID(); 
+        uint256 newID = counter;
+        counter++;
         Tenant memory t = Tenant(newID, newTenant, leaseL);
         tenants.push(t);
     }
@@ -139,12 +140,5 @@ contract HousingContract is Mortal {
                 break;
             }
         }
-    }
-
-    /** 
-    * @dev Generates new unique ID for new tenant, to be called by addTenant function
-    */
-    function generateNewID() public onlyOwner{
-        return;
     }
 }
