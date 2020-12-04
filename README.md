@@ -1,12 +1,12 @@
-# Housing Smart Contract
+# Escrow Contract
 
 ## Group members:
 
--   Kevin: kevin.fncw@gmail.com
+-   Kevin W: kevin.fncw@gmail.com
 -   Jason C: jason.chen53@myhunter.cuny.edu
 
 ## Purpose of Contract:
 
-With renting a apartments, it is important to ensure that both the renter and rentee keep their ends of the relationship. It is especially important to receive payments in a quick and timely manner when it is due, which is automatically done in this contract by having owners receive payments (monthly rent, security deposits, etc.) from their tenants. This contract has some helpful features for the owner and tenants relationship. For example, The tenants can request to leave, change tenantship, and pay rental fee. Owner can add a tenant, remove a tenant, and requests to pay rental fee. With so many important payments and payment deadlines to be aware of, a smart contract will ensure the security and efficiency in renting apartments/condos.
+In this contract, we set up an escrow system by making the arbiter the smart contract itself. Tokens are given by the seller to the smart contract to sell. When a buyer wants to purchase these tokens, they send funds directly to the smart contract. When this occurs, it will cause the smart contract to transfer those tokens to the buyer, and also give the recieved funds to the seller.
 
 ### [Styling of Interface](https://solidity.readthedocs.io/en/v0.5.13/style-guide.html)
