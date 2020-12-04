@@ -18,9 +18,9 @@ With renting a apartments, it is important to ensure that both the renter and re
     -gives payable addr 
     -puts sellable tokens on arbiter
 
-2) buyer contracts arbiter to see what is on sale 
-    - info will be displayed (unique id or item #, name, cost, date posted)
-    - call a function with parameters(unique id # or item number, ether to be sent)
+2) buyer contacts arbiter to see what is on sale 
+    - info will be displayed (unique id or item #, name, cost)
+    - call a function with parameters(unique id # or item number)
 
 3) when arbiter has received funds from buyer
     - event is called to send token associated with unique # to buyer 
