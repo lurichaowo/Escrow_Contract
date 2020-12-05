@@ -73,7 +73,7 @@ contract EscrowContract is Mortal {
     }
     
     function releaseFunds(uint _orderId) external {
-        completePayment(_orderId, collectionAddress, PaymentStatus.Completed);
+        completePayment(_orderId, _buyer, _seller, PaymentStatus.Completed);
     }
     
     
@@ -82,7 +82,7 @@ contract EscrowContract is Mortal {
         require(_status == PaymentStatus.Pending);
         
         ERC20(address(this)).transfer(_buyer, balances[_buyer]);
-        ERC20(address(this)).transfer(_seller, address(this).balance);
+        address(this).transfer(_seller, address(this).balance);
 
         emit Purchase(_id, _seller, _amount, paymentStatus.Completed);
     }
