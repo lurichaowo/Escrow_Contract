@@ -1,8 +1,8 @@
-# Housing Smart Contract
+# Escrow Contract
 
 ## Group members:
 
--   Kevin: kevin.fncw@gmail.com
+-   Kevin W: kevin.fncw@gmail.com
 -   Jason C: jason.chen53@myhunter.cuny.edu
 
 ## Purpose of Contract:
