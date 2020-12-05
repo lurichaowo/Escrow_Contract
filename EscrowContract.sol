@@ -40,37 +40,51 @@ contract Mortal is Owned {
  */
 contract EscrowContract is Mortal {
 
-    struct ArbToken{
-        address owner; // owner of the tokens
-        uint256 amtOfTokens; // amount of tokens 
-    }
+    enum paymentStatus {Pending, Completed}
+    
+    ERC20 public tokens;
+    
+    event ItemPosted(
+        uint256 indexed _id,
+        address indexed _seller,
+        uint256 _amount,
+        paymentStatus status
+    );
 
-    // do we want Seller to hold array of tokens?
-    struct Seller {
-        address account_check; // account to check if item belongs to Seller 
-        address payable account; // account of seller to send ether to 
-    }
+    event sold(
+        uint256 indexed _id,
+        address indexed _buyer,
+        uint256 _amount,
+        paymentStatus status
+    );
 
-    struct Buyer{
-        address account; // buyer account to send tokens to 
-    }
-
-    // still not too sure how the item is gonna work
     struct Item{
-        uint256 item_number; // unique item number 
-        ArbToken token; // token(s) to be put on sale
-        uint256 price; // price of the token 
-        Seller s; // seller obj (will contain payable addr of seller)
+        uint256 indexed _id; // unique item number 
+        uint256 _amount; // # of tokens
+        uint256 _price; // price of the token(s)
+        address payable _seller;
     }
 
     /** Global Variables */
-    Seller[] sellers; // list of sellers 
-    Buyer[] buyers; // list of buyers
     Item[] items; // list of items on sale 
-    uint256 item_counter; // for unique item number 
+    uint256 _id_counter; // for unique item number 
 
-    constructor(uint256 item_counter) {
-        item_counter = 0; // initializing item counter
+    constructor(uint256 _id_counter) {
+        _id_counter = 0; // initializing item counter
+    }
+
+    /** Set up shop and deposit tokens onto arbitar */
+    // seller giving arbiter(the smart contract) tokens they want to sell, through approval and deposit
+    /** Called by seller to post tokens */
+    function sellTokens(address payable _seller, uint _amount, uint256 _sell_price) public {
+        ERC20(_seller).approve(address(this), _amount);
+        // transfer the tokens from the sender to this contract
+        ERC20(_seller).transferFrom(_seller, address(this), _amount);
+
+        Item memory i = Item(_id_counter, amount, _sell_price);
+        items.push(i);
+
+        emit Purchase(_id, _seller, _amount, paymentStatus.Pending);
     }
 
     /** 
@@ -80,7 +94,9 @@ contract EscrowContract is Mortal {
         string list;
         if (items.length > 0){
             for (uint i = 0; i < items.length; i++){
-                list = list + items[i].item_number;
+                list = list + items[i]._id;
+                list = list + "\t";
+                list = list + items[i].amount;
                 list = list + "\t";
                 list = list + items[i].price;
                 list = list + "\n";
@@ -97,22 +113,48 @@ contract EscrowContract is Mortal {
     * @param item_num number to identify which item they want to buy 
     * @param buyer address of buyer to transfer ownership of token
     */
-    function buyItem(uint256 item_num, address buyer) public payable{
-        uint itemNumToBuy;
-        // find the item 
-        for (uint i = 0; i < items.length; i++){
-            if (items[i].item_number == item_num){
-                itemNumToBuy = i;
-            }
-        }
+    function buyItem(uint256 _id, address payable buyer) public payable{
+        require(msg.value >= items[itemNumToBuy].price, "Insufficient funds to allow purchase of item");
 
-        require(msg.value == items[itemNumToBuy].price, "Insufficient funds to allow purchase of item");
+        /** return the change amount of ether sent  */
 
-        items[itemNumToBuy].token.owner = buyer;
-        items[itemNumToBuy].onSale = false;
+        ERC20(address(this)).transfer(_buyer, balances[_buyer]);
+
+        /** find token to send to buyer based on _id */
+        
+
+        /** get seller address to send ether to */
 
         items[itemNumToBuy].s.account.transfer(msg.value);
     }
+
+    function findItem(uint256 _id) returns (uint){
+        uint itemToFind;
+        // find the item 
+        for (uint i = 0; i < items.length; i++){
+            if (items[i]._id == _id){
+                return itemToFind;
+            }
+        }
+        return;
+    }
+
+
+    function releaseFunds(uint _orderId) external {
+        completePayment(_orderId, collectionAddress, PaymentStatus.Completed);
+    }
+    
+    
+    // when funds are received from buyer, give tokens to buyer and money to seller
+    function completePayment(uint _id, address payable _buyer, address payable _seller PaymentStatus _status) private {
+        require(_status == PaymentStatus.Pending);
+        
+        ERC20(address(this)).transfer(_buyer, balances[_buyer]);
+        ERC20(address(this)).transfer(_seller, address(this).balance);
+
+        emit Purchase(_id, _seller, _amount, paymentStatus.Completed);
+    }
+    
 
     /** 
     * @dev Seller wants to remove token(s) from list 
