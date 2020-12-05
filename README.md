@@ -1,4 +1,4 @@
-# Housing Smart Contract
+# Escrow Smart Contract
 
 ## Group members:
 
@@ -7,7 +7,9 @@
 
 ## Purpose of Contract:
 
-With renting a apartments, it is important to ensure that both the renter and rentee keep their ends of the relationship. It is especially important to receive payments in a quick and timely manner when it is due, which is automatically done in this contract by having owners receive payments (monthly rent, security deposits, etc.) from their tenants. This contract has some helpful features for the owner and tenants relationship. For example, The tenants can request to leave, change tenantship, and pay rental fee. Owner can add a tenant, remove a tenant, and requests to pay rental fee. With so many important payments and payment deadlines to be aware of, a smart contract will ensure the security and efficiency in renting apartments/condos.
+When transacting there is always the inherent risk of failure of one party to comply with the agreed on end of the bargain and the privacy concern with having personal information exposed during such transactions. The seller failing to deliver the promised goods or the buyer failing to properly transfer funds to the seller's account. One such instance is the buying and selling of tokens. 
+
+This contract was created to help alleviate those risks. By having the contract as an arbiter, the seller would deposit their tokens into the contract to list their tokens at a given sell price. Buyers can then view the listings of tokens from various sellers and have choose which ones they want to buy. When a listing is sold, the buyer would have to transfer the right amount to the contract which would then transfer the funds directly to the seller. By acting as the middleman, the contract can transfer the funds and goods to their corresponding owners without them ever knowing who sold or bought the tokens.
 
 ### [Styling of Interface](https://solidity.readthedocs.io/en/v0.5.13/style-guide.html)
 
