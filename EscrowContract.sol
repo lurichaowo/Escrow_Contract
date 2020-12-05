@@ -41,37 +41,50 @@ contract Mortal is Owned {
  * @dev Implements escrow system to serve as middleman between seller and buyer
  */
 contract EscrowContract is Mortal {
-    uint256 tokens;
-    address public buyer;
+    
+    enum paymentStatus {Pending, Completed}
+    
+    ERC20 public tokens;
+    address payable public buyer;
     address payable public seller;
     
     mapping ( address => uint256 ) public balances;
     
     event Purchase(
-        address _buyer,
-        uint256 _amount
+        uint256 indexed _id,
+        address indexed _seller,
+        uint256 _amount,
+        paymentStatus status
     );
     
-    constructor(address _buyer, address payable _seller) public {
-    buyer = _buyer;
-    seller = _seller;
-    }
-    
     // seller giving arbiter(the smart contract) tokens they want to sell, through approval and deposit
-    ERC20(seller).approve(address(this), uint tokens);
-    
-    deposit(uint tokens) {
-    // add the deposited tokens into the existing balance of the smart contract
-    balances[msg.sender]+= tokens;
-
-    // transfer the tokens from the sender to this contract
-    ERC20(seller).transferFrom(msg.sender, arbiter, tokens);
+    function sellTokens(uint256 _id, address payable _seller, uint256 _amount) public {
+        ERC20(_seller).approve(address(this), uint tokens);
+        emit Purchase(_id, _seller, _amount, paymentStatus.Pending);
     }
+    
+    
+    function deposit(uint tokens) public {
+        // add the deposited tokens into the existing balance of the smart contract
+        balances[msg.sender] += tokens;
+    
+        // transfer the tokens from the sender to this contract
+        ERC20(seller).transferFrom(msg.sender, arbiter, tokens);
+    }
+    
+    function releaseFunds(uint _orderId) external {
+        completePayment(_orderId, collectionAddress, PaymentStatus.Completed);
+    }
+    
     
     // when funds are received from buyer, give tokens to buyer and money to seller
-    emit Purchase(msg.sender, address(this).balance)
-    
-    ERC20(arbiter).transfer(msg.sender, balances[msg.sender]);
-    seller.transfer(address(this).balance);
+    function completePayment(uint _id, address payable _buyer, address payable _seller PaymentStatus _status) private {
+        require(_status == PaymentStatus.Pending);
+        
+        ERC20(address(this)).transfer(_buyer, balances[_buyer]);
+        ERC20(address(this)).transfer(_seller, address(this).balance);
+
+        emit Purchase(_id, _seller, _amount, paymentStatus.Completed);
+    }
     
 }
