@@ -2,6 +2,7 @@
 
 pragma solidity >=0.7.0 <0.8.0;
 
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.7/contracts/token/ERC20/ERC20.sol";
 /** 
  * @title Owned
  * @dev Base contract to represent ownership of a contract
@@ -51,7 +52,7 @@ contract EscrowContract is Mortal {
         paymentStatus status
     );
 
-    event sold(
+    event ItemSold(
         uint256 indexed _id,
         address indexed _buyer,
         uint256 _amount,
@@ -59,130 +60,122 @@ contract EscrowContract is Mortal {
     );
 
     struct Item{
-        uint256 indexed _id; // unique item number 
+        uint256 _id; // unique item number 
         uint256 _amount; // # of tokens
-        uint256 _price; // price of the token(s)
+        uint256 _price; // price of each token(s)
         address payable _seller;
     }
 
-    /** Global Variables */
+    // Global Variables
     Item[] items; // list of items on sale 
-    uint256 _id_counter; // for unique item number 
+    uint256 _id_counter = 0; // for unique item number 
 
-    constructor(uint256 _id_counter) {
-        _id_counter = 0; // initializing item counter
-    }
 
-    /** Set up shop and deposit tokens onto arbitar */
-    // seller giving arbiter(the smart contract) tokens they want to sell, through approval and deposit
-    /** Called by seller to post tokens */
+    /** 
+    * @dev Seller calls function and sets up shop and deposit tokens onto arbitar 
+    * @param _seller address of seller to be stored on item 
+    * @param _amount amount of tokens to be sold 
+    * @param _sell_price sell price of each token
+    */
     function sellTokens(address payable _seller, uint _amount, uint256 _sell_price) public {
-        ERC20(_seller).approve(address(this), _amount);
         // transfer the tokens from the sender to this contract
+        ERC20(_seller).approve(address(this), _amount);
         ERC20(_seller).transferFrom(_seller, address(this), _amount);
 
-        Item memory i = Item(_id_counter, amount, _sell_price);
+        // create new item to be added to list of items[]
+        Item memory i = Item(_id_counter, _amount, _sell_price, _seller);
         items.push(i);
-
-        emit Purchase(_id, _seller, _amount, paymentStatus.Pending);
+        
+        // event call 
+        emit ItemPosted(_id_counter, _seller, _amount, paymentStatus.Pending);
+        
+        // increment _id_counter
+        _id_counter++;
     }
 
     /** 
-    * @dev Buyer requests to see what is being sold
+    * @dev Buyer requests to see what is being sold (will be displayed on console)
     */
-    function viewItems() public view returns (string){
-        string list;
+    function viewItems() public{
+        // parse through and print onto console
         if (items.length > 0){
             for (uint i = 0; i < items.length; i++){
-                list = list + items[i]._id;
-                list = list + "\t";
-                list = list + items[i].amount;
-                list = list + "\t";
-                list = list + items[i].price;
-                list = list + "\n";
+                log2(
+                    bytes32(items[i]._id),
+                    bytes32(items[i]._amount),
+                    bytes32(items[i]._price)
+                );
             }
-            return list;
-        }
-        else{
-            return list;
         }
     }
 
     /** 
     * @dev Buyer enters item number of token, they want to buy
-    * @param item_num number to identify which item they want to buy 
-    * @param buyer address of buyer to transfer ownership of token
+    * @param _id number to identify which item they want to buy 
+    * @param _buyer address of buyer to transfer ownership of token
     */
-    function buyItem(uint256 _id, address payable buyer) public payable{
-        require(msg.value >= items[itemNumToBuy].price, "Insufficient funds to allow purchase of item");
-
-        /** return the change amount of ether sent  */
-
-        ERC20(address(this)).transfer(_buyer, balances[_buyer]);
-
-        /** find token to send to buyer based on _id */
+    function buyItem(uint256 _id, address payable _buyer) public payable{
+        // find tokens associated with _id
+        uint index; // index of item
+        bool found; // if item actually exists 
+        (index, found) = findItem(_id); // function to find item
+        require(found == true, "Item is not found"); // check if item actually exits, else error msg
         
+        Item memory itemToBeBought = items[index]; // item obj of item to be purchased
+        
+        require(msg.value >= itemToBeBought._price * itemToBeBought._amount, "Insufficient funds to allow purchase of item"); // check if buyer sent enough ether to buy tokens
 
-        /** get seller address to send ether to */
+        // return the change amount of ether sent
+        if (msg.value > itemToBeBought._price * itemToBeBought._amount){
+            uint diff = msg.value - itemToBeBought._price * itemToBeBought._amount;
+            _buyer.transfer(diff);
+        }
+        
+        // sends tokens to buyer
+        ERC20(address(this)).transfer(_buyer, itemToBeBought._amount);
 
-        items[itemNumToBuy].s.account.transfer(msg.value);
+        // send ether to 
+        itemToBeBought._seller.transfer(msg.value);
+        
+        // event call 
+        emit ItemSold(_id_counter, _buyer, itemToBeBought._amount, paymentStatus.Completed);
     }
 
-    function findItem(uint256 _id) returns (uint){
+    /** 
+    * @dev Seller wants to remove token(s) from list 
+    * @param _id number to identify which item they want to remove 
+    */
+    function removeItem(uint256 _id) public {
+        // find tokens associated with _id
+        uint index; // index of item
+        bool found; // if item actually exists 
+        (index, found) = findItem(_id); // function to find item
+        require(found == true, "Item is not found"); // check if item actually exits, else error msg
+        
+        Item memory itemToRemove = items[index]; // item obj to remove
+
+        require(msg.sender == itemToRemove._seller, "Not authorized to remove sale of item"); // check if is actually seller of tokens
+
+        ERC20(address(this)).transfer(itemToRemove._seller, itemToRemove._amount); // transfer tokens back to original seller
+        
+        // swap and pop item from array of items[]  
+        items[index] = items[items.length-1];
+        items[items.length-1] = itemToRemove;
+        items.pop();
+    }
+    
+    /** 
+    * @dev To find and return the index in items[] of the item being looked for through item's _id
+    * @param _id number to identify which item they want to find
+    */
+    function findItem(uint256 _id) public view returns (uint, bool){
         uint itemToFind;
         // find the item 
         for (uint i = 0; i < items.length; i++){
             if (items[i]._id == _id){
-                return itemToFind;
+                return (itemToFind, true);
             }
         }
-        return;
+        return (0, false);
     }
-
-
-    function releaseFunds(uint _orderId) external {
-        completePayment(_orderId, collectionAddress, PaymentStatus.Completed);
-    }
-    
-    
-    // when funds are received from buyer, give tokens to buyer and money to seller
-    function completePayment(uint _id, address payable _buyer, address payable _seller PaymentStatus _status) private {
-        require(_status == PaymentStatus.Pending);
-        
-        ERC20(address(this)).transfer(_buyer, balances[_buyer]);
-        ERC20(address(this)).transfer(_seller, address(this).balance);
-
-        emit Purchase(_id, _seller, _amount, paymentStatus.Completed);
-    }
-    
-
-    /** 
-    * @dev Seller wants to remove token(s) from list 
-    * @param item_num number to identify which item they want to buy 
-    * @param buyer address of buyer to transfer ownership of token
-    */
-    function removeItem(uint256 item_num, address seller) public {
-        uint itemNumToRemove;
-        // find the item 
-        for (uint i = 0; i < items.length; i++){
-            if (items[i].item_number == item_num){
-                itemNumToRemove = i;
-            }
-        }
-
-        require(msg.sender != address(items[itemNumToRemove].s.account_check), "Not authorized to remove sale of item");
-
-        Item memory i = items[itemNumToRemove];
-        items[itemNumToRemove] = items[items.length-1];
-        items[items.length-1] = i;
-        items.pop();
-    }
-
-
-    //EVENTS
-    /*event RentPayment(
-        address indexed _from,
-        bytes32 indexed _id,
-        uint256 _value
-    );*/
 }
