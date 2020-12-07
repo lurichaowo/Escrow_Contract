@@ -37,7 +37,6 @@ contract Mortal is Owned {
 
 
 contract Token is ERC20 {
-    
     constructor () public ERC20("Token", "TKN") {
         _mint(msg.sender, 1000000 * (10 ** uint256(decimals())));
     }
@@ -52,6 +51,7 @@ contract EscrowContract is Mortal {
     enum paymentStatus {Pending, Completed}
     
     ERC20 public tokens;
+    mapping ( address => uint256 ) public balances;
     
     event ItemPosted(
         uint256 indexed _id,
@@ -86,9 +86,14 @@ contract EscrowContract is Mortal {
     * @param _sell_price sell price of each token
     */
     function sellTokens(address payable _seller, uint _amount, uint256 _sell_price) public payable {
+        
         // transfer the tokens from the sender to this contract
         ERC20(_seller).approve(address(this), _amount);
+        ERC20(_seller).increaseAllowance(address(this), _amount);
         ERC20(_seller).transferFrom(_seller, address(this), _amount);
+        
+        // add the deposited tokens into existing balance 
+        balances[msg.sender] += tokens;
 
         // create new item to be added to list of items[]
         Item memory i = Item(_id_counter, _amount, _sell_price, _seller);
