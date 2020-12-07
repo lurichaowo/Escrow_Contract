@@ -2,7 +2,7 @@
 
 pragma solidity >=0.7.0 <0.8.0;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/solc-0.7/contracts/token/ERC20/ERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v3.3/contracts/token/ERC20/ERC20.sol";
 /** 
  * @title Owned
  * @dev Base contract to represent ownership of a contract
@@ -35,6 +35,13 @@ contract Mortal is Owned {
 	}
 }
 
+
+contract Token is ERC20 {
+    constructor () public ERC20("Token", "TKN") {
+        _mint(msg.sender, 1000000 * (10 ** uint256(decimals())));
+    }
+}
+
 /** 
  * @title EscrowContract
  * @dev Implements escrow system to serve as middleman between seller and buyer
@@ -44,6 +51,7 @@ contract EscrowContract is Mortal {
     enum paymentStatus {Pending, Completed}
     
     ERC20 public tokens;
+    mapping ( address => uint256 ) public balances;
     
     event ItemPosted(
         uint256 indexed _id,
@@ -77,10 +85,15 @@ contract EscrowContract is Mortal {
     * @param _amount amount of tokens to be sold 
     * @param _sell_price sell price of each token
     */
-    function sellTokens(address payable _seller, uint _amount, uint256 _sell_price) public {
+    function sellTokens(address payable _seller, uint _amount, uint256 _sell_price) public payable {
+        
         // transfer the tokens from the sender to this contract
         ERC20(_seller).approve(address(this), _amount);
+        ERC20(_seller).increaseAllowance(address(this), _amount);
         ERC20(_seller).transferFrom(_seller, address(this), _amount);
+        
+        // add the deposited tokens into existing balance 
+        balances[msg.sender] += tokens;
 
         // create new item to be added to list of items[]
         Item memory i = Item(_id_counter, _amount, _sell_price, _seller);
