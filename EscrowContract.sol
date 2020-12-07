@@ -46,7 +46,11 @@ contract Token is ERC20 {
  * @title EscrowContract
  * @dev Implements escrow system to serve as middleman between seller and buyer
  */
-contract EscrowContract is Mortal {
+contract EscrowContract is ERC20, Mortal {
+    
+    constructor () public ERC20("Token", "TKN") {
+        _mint(msg.sender, 0 * (10 ** uint256(decimals())));
+    }
 
     enum paymentStatus {Pending, Completed}
     
@@ -93,7 +97,7 @@ contract EscrowContract is Mortal {
         ERC20(_seller).transferFrom(_seller, address(this), _amount);
         
         // add the deposited tokens into existing balance 
-        balances[msg.sender] += tokens;
+        balances[msg.sender] += _amount;
 
         // create new item to be added to list of items[]
         Item memory i = Item(_id_counter, _amount, _sell_price, _seller);
