@@ -38,6 +38,20 @@ contract Mortal is Owned {
 	}
 }
 
+
+interface InterfaceTokenEscrowContract {
+    function name() view external returns (string memory);
+    function symbol() view external returns (string memory);
+    function totalSupply() view external returns (uint256);
+    function tokenBalancesOf(address _requester) view external returns (uint256);
+    function etherBalancesOf(address _requester) view external returns (uint256);
+    function depositTokens(uint256 _tokens) external;
+    function depositEther(uint256 _etherAmount) payable external;
+    function buyTokens(address _seller, address _buyer, uint256 _tokens, uint256 _etherAmount) external;
+    function withdrawTokens() external;
+}
+    
+    
 /** 
  * @title InterfaceTokenEscrowContract
  * @dev acts as abstract contract for the main TokenEscrowContract
@@ -65,8 +79,8 @@ interface InterfaceTokenEscrowContract {
  * @dev Implements escrow system to serve as middleman between seller and buyer
  */
 contract TokenEscrowContract is ERC20, Mortal {
-    
-    // mapping for tokenBalance nad ether Balance of Buyers and Sellers 
+  
+    // mapping for tokenBalance and ether Balance of Buyers and Sellers 
     mapping(address => uint256) private tokenBalances;
     mapping(address => uint256) private etherBalances;
     
@@ -103,7 +117,6 @@ contract TokenEscrowContract is ERC20, Mortal {
         etherBalances[msg.sender] += _etherAmount;
     }
     
-    
     /**
     * @param _seller seller of token(s)
     * @param _buyer buyer of token(s) 
@@ -126,7 +139,7 @@ contract TokenEscrowContract is ERC20, Mortal {
         tokenBalances[_seller] -= _tokens;
         tokenBalances[_buyer] += _tokens;
     }
-    
+
     /**
     * @dev when seller wants to stop selling their tokens, 
     * @dev tokens will be sent back to original wallet 
